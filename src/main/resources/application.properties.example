@@ -1,0 +1,15 @@
+spring.application.name=mora
+spring.datasource.url=jdbc:postgresql://localhost:5433/mora
+spring.datasource.username=admin
+spring.datasource.password=admin123
+spring.datasource.driver-class-name=org.postgresql.Driver
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.format_sql=true
+spring.jpa.open-in-view=false
+server.port=8080
+springdoc.swagger-ui.path=/swagger-ui.html
+springdoc.api-docs.path=/api-docs
+mora.jwt.secret=TU_SECRET_AQUI
+mora.jwt.expiration=604800000
+anthropic.api.key=TU_API_KEY_AQUI
