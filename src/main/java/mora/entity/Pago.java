@@ -1,5 +1,6 @@
 package mora.entity;
 
+import com.fasterxml.jackson.annotation.JsonCreator; // Importación añadida
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
@@ -37,6 +38,19 @@ public class Pago {
     }
 
     public enum MetodoPago {
-        EFECTIVO, TARJETA, TRANSFERENCIA
+        EFECTIVO, TARJETA, TRANSFERENCIA;
+
+        @JsonCreator
+        public static MetodoPago fromString(String value) {
+            if (value == null) {
+                return null;
+            }
+            for (MetodoPago metodo : MetodoPago.values()) {
+                if (metodo.name().equalsIgnoreCase(value)) {
+                    return metodo;
+                }
+            }
+            throw new IllegalArgumentException("Método de pago no válido: " + value);
+        }
     }
-}
+} // Llave de cierre de la clase Pago añadida

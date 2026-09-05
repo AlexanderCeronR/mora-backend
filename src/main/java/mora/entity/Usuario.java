@@ -28,7 +28,13 @@ public class Usuario {
     @Column(nullable = false)
     private Rol rol;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean disponible = true;
+    // Para meseros: true = puede recibir pedidos
+    // Para supervisores: true = está en turno
+
     public enum Rol {
-        ADMIN, MESERO, CAJERO
+        ADMIN, SUPERVISOR, MESERO, CAJERO, CLIENTE
     }
 }

@@ -3,6 +3,7 @@ package mora.dto.request;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import mora.entity.Pago;
+import com.fasterxml.jackson.annotation.JsonCreator;
 
 @Data
 public class PagoRequest {

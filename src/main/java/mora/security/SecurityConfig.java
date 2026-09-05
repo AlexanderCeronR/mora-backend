@@ -47,7 +47,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/auth/login").permitAll()
-                        // ← solo login es público, register requiere ADMIN
+                        .requestMatchers("/publico/**").permitAll()
+                        // ← las rutas del cliente son públicas
                         .anyRequest().authenticated())
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtFilter,
