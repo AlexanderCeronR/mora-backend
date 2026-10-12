@@ -7,6 +7,7 @@ import mora.repository.UsuarioRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
@@ -163,4 +164,38 @@ public class SupervisorController {
                 "disponible", disponible
         ));
     }
+    // Reasignar pedido a otro mesero
+    @PatchMapping("/pedidos/{pedidoId}/reasignar/{meseroId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISOR')")
+    @Transactional
+    public ResponseEntity<Map<String, Object>> reasignarMesero(
+            @PathVariable Long pedidoId,
+            @PathVariable Long meseroId) {
+
+        Pedido pedido = pedidoRepository.findById(pedidoId)
+                .orElseThrow(() -> new RuntimeException(
+                        "Pedido no encontrado"));
+
+        Usuario mesero = usuarioRepository.findById(meseroId)
+                .orElseThrow(() -> new RuntimeException(
+                        "Mesero no encontrado"));
+
+        String meseroAnterior = pedido.getMesero() != null
+                ? pedido.getMesero().getNombre()
+                : "Sin asignar";
+
+        pedido.setMesero(mesero);
+        pedido.setEstadoAsignacion(Pedido.EstadoAsignacion.ASIGNADO);
+        pedidoRepository.save(pedido);
+
+        return ResponseEntity.ok(Map.of(
+                "mensaje", "Pedido #" + pedidoId +
+                        " reasignado de " + meseroAnterior +
+                        " a " + mesero.getNombre(),
+                "pedidoId", pedidoId,
+                "meseroAnterior", meseroAnterior,
+                "meseroNuevo", mesero.getNombre()
+        ));
+    }
 }
+

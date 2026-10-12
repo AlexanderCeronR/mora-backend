@@ -1,10 +1,10 @@
 package mora.controller;
 
 import mora.dto.request.DetallePedidoRequest;
-import mora.dto.response.PedidoResponse;
 import mora.dto.response.ProductoResponse;
 import mora.entity.*;
 import mora.repository.*;
+import mora.service.AsignacionService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,6 +12,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/publico")
@@ -21,17 +22,19 @@ public class PublicoController {
     private final ProductoRepository productoRepository;
     private final PedidoRepository pedidoRepository;
     private final MesaRepository mesaRepository;
+    private final AsignacionService asignacionService;
 
     public PublicoController(
             ProductoRepository productoRepository,
             PedidoRepository pedidoRepository,
-            MesaRepository mesaRepository) {
+            MesaRepository mesaRepository,
+            AsignacionService asignacionService) {
         this.productoRepository = productoRepository;
         this.pedidoRepository = pedidoRepository;
         this.mesaRepository = mesaRepository;
+        this.asignacionService = asignacionService;
     }
 
-    // Ver menú disponible — sin auth
     @GetMapping("/menu")
     public ResponseEntity<List<ProductoResponse>> verMenu() {
         List<ProductoResponse> productos = productoRepository
@@ -42,7 +45,6 @@ public class PublicoController {
         return ResponseEntity.ok(productos);
     }
 
-    // Ver menú por categoría — sin auth
     @GetMapping("/menu/{categoria}")
     public ResponseEntity<List<ProductoResponse>> verMenuPorCategoria(
             @PathVariable String categoria) {
@@ -54,7 +56,6 @@ public class PublicoController {
         return ResponseEntity.ok(productos);
     }
 
-    // Hacer pedido desde el QR — sin auth
     @PostMapping("/mesa/{mesaId}/pedido")
     public ResponseEntity<Map<String, Object>> hacerPedido(
             @PathVariable Long mesaId,
@@ -64,7 +65,6 @@ public class PublicoController {
                 .orElseThrow(() -> new RuntimeException(
                         "Mesa no encontrada"));
 
-        // Crea el pedido sin mesero asignado
         Pedido pedido = Pedido.builder()
                 .mesa(mesa)
                 .mesero(null)
@@ -81,7 +81,8 @@ public class PublicoController {
 
             if (!producto.getDisponible()) {
                 throw new RuntimeException(
-                        "Producto no disponible: " + producto.getNombre());
+                        "Producto no disponible: " +
+                                producto.getNombre());
             }
 
             BigDecimal subtotal = producto.getPrecio()
@@ -101,24 +102,32 @@ public class PublicoController {
 
         pedido.setTotal(total);
 
+        // Intenta asignación automática
+        Optional<Usuario> meseroAsignado =
+                asignacionService.asignarMeseroAutomatico(pedido);
+
         // Cambia la mesa a OCUPADA
         mesa.setEstado(Mesa.Estado.OCUPADA);
         mesaRepository.save(mesa);
 
         Pedido guardado = pedidoRepository.save(pedido);
 
-        // Retorna el token para que el cliente
-        // pueda ver el estado de su pedido
+        String mensajeAsignacion = meseroAsignado
+                .map(m -> "Tu pedido fue asignado a " + m.getNombre())
+                .orElse("Tu pedido fue recibido. " +
+                        "Un mesero será asignado pronto.");
+
         return ResponseEntity.ok(Map.of(
                 "pedidoId", guardado.getId(),
                 "tokenCliente", guardado.getTokenCliente(),
                 "total", guardado.getTotal(),
-                "mensaje", "Pedido recibido. " +
-                        "Un mesero será asignado pronto."
+                "meseroAsignado", meseroAsignado
+                        .map(Usuario::getNombre)
+                        .orElse("Pendiente"),
+                "mensaje", mensajeAsignacion
         ));
     }
 
-    // Ver estado del pedido — solo con token del cliente
     @GetMapping("/pedido/{token}/estado")
     public ResponseEntity<Map<String, Object>> verEstadoPedido(
             @PathVariable String token) {

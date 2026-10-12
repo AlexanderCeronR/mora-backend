@@ -34,11 +34,17 @@ public class JwtFilter extends OncePerRequestFilter {
             @NonNull FilterChain filterChain)
             throws ServletException, IOException {
 
-        // 1. Lee el header Authorization del request
+        String path = request.getRequestURI();
+
+        // Deja pasar rutas públicas sin verificar token
+        if (path.startsWith("/publico/") ||
+                path.equals("/auth/login")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         String authHeader = request.getHeader("Authorization");
 
-        // 2. Si no hay header o no empieza con "Bearer "
-        //    deja pasar el request sin autenticar
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
