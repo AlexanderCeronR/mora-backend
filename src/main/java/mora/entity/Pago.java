@@ -32,6 +32,15 @@ public class Pago {
     @Column(nullable = false)
     private LocalDateTime fechaPago;
 
+    @Column(unique = true)
+    private String numeroFactura;
+    // Ej: MORA-2026-0001
+
+    @Column
+    private String cufe;
+    // Código único de factura electrónica
+    // cuando se conecte a la DIAN
+
     @PrePersist
     public void prePersist() {
         this.fechaPago = LocalDateTime.now();

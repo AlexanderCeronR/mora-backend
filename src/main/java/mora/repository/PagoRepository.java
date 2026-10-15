@@ -1,6 +1,7 @@
 package mora.repository;
 
 import mora.entity.Pago;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -11,8 +12,17 @@ import java.util.Optional;
 public interface PagoRepository extends JpaRepository<Pago, Long> {
 
     Optional<Pago> findByPedidoId(Long pedidoId);
-    // Busca el pago de un pedido específico
 
     List<Pago> findByMetodoPago(Pago.MetodoPago metodoPago);
-    // Ver pagos por método: EFECTIVO, TARJETA, TRANSFERENCIA
+
+    @EntityGraph(attributePaths = {
+            "pedido",
+            "pedido.detalles",
+            "pedido.detalles.producto",
+            "pedido.mesa",
+            "pedido.mesero"
+    })
+    Optional<Pago> findById(Long id);
+    // Carga el pago con todos sus relacionados
+    // para generar la factura correctamente
 }

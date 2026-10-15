@@ -21,6 +21,7 @@ public class PagoResponse {
     private BigDecimal total;
     private String metodoPago;
     private LocalDateTime fechaPago;
+    private String numeroFactura; // ← agrega este campo
 
     public static PagoResponse fromEntity(Pago pago) {
         return PagoResponse.builder()
@@ -30,6 +31,7 @@ public class PagoResponse {
                 .total(pago.getTotal())
                 .metodoPago(pago.getMetodoPago().name())
                 .fechaPago(pago.getFechaPago())
+                .numeroFactura(pago.getNumeroFactura()) // ← agrega esto
                 .build();
     }
 }

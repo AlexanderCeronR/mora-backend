@@ -26,6 +26,12 @@ public class JwtFilter extends OncePerRequestFilter {
         this.jwtUtil = jwtUtil;
         this.userDetailsService = userDetailsService;
     }
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        return path.startsWith("/publico/") ||
+                path.equals("/auth/login");
+    }
 
     @Override
     protected void doFilterInternal(
@@ -36,7 +42,7 @@ public class JwtFilter extends OncePerRequestFilter {
 
         String path = request.getRequestURI();
 
-        // Deja pasar rutas públicas sin verificar token
+        // Primero verifica si es ruta pública
         if (path.startsWith("/publico/") ||
                 path.equals("/auth/login")) {
             filterChain.doFilter(request, response);
@@ -86,3 +92,4 @@ public class JwtFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 }
+
