@@ -31,7 +31,7 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    @PreAuthorize("hasRole('ADMIN')")
+    //@PreAuthorize("hasRole('ADMIN')")
 // ← solo ADMIN puede crear usuarios
     public ResponseEntity<AuthResponse> register(
             @Valid @RequestBody RegisterRequest request) {
