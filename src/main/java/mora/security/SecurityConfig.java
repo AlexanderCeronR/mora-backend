@@ -63,7 +63,8 @@ public class SecurityConfig {
                 "http://localhost:5173",
                 "http://192.168.1.*:5173",
                 // ← permite cualquier IP de tu red local
-                "http://127.0.0.1:5173"
+                "http://127.0.0.1:5173",
+                "https://mora-frontend-two.vercel.app"
         ));
         configuration.setAllowedMethods(List.of(
                 "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"
