@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class AuthResponse {
-
+    private Long id;
     private String token;
     // El JWT que el frontend guarda y manda en cada request
 
