@@ -35,6 +35,6 @@ public class Usuario {
     // Para supervisores: true = está en turno
 
     public enum Rol {
-        ADMIN, SUPERVISOR, MESERO, CAJERO, CLIENTE
+        ADMIN, SUPERVISOR, MESERO, CAJERO, CLIENTE, COCINA
     }
 }
