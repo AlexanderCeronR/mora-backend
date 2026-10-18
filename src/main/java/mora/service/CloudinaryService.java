@@ -26,15 +26,13 @@ public class CloudinaryService {
 
     @PostConstruct
     public void init() {
-        if ("default".equals(cloudName)) {
+        String cloudinaryUrl = System.getenv("CLOUDINARY_URL");
+
+        if (cloudinaryUrl == null || cloudinaryUrl.isBlank()) {
             return;
         }
-        cloudinary = new Cloudinary(ObjectUtils.asMap(
-                "cloud_name", cloudName,
-                "api_key", apiKey,
-                "api_secret", apiSecret,
-                "secure", true
-        ));
+
+        cloudinary = new Cloudinary(cloudinaryUrl);
     }
 
     public String subirImagen(MultipartFile file) throws IOException {
