@@ -27,12 +27,34 @@ public class CloudinaryService {
     @PostConstruct
     public void init() {
         String cloudinaryUrl = System.getenv("CLOUDINARY_URL");
+        String cloudName = System.getenv("CLOUDINARY_CLOUD_NAME");
 
-        if (cloudinaryUrl == null || cloudinaryUrl.isBlank()) {
+        // Log para debug
+        System.out.println("=== CLOUDINARY DEBUG ===");
+        System.out.println("CLOUDINARY_URL: " + cloudinaryUrl);
+        System.out.println("CLOUDINARY_CLOUD_NAME: " + cloudName);
+        System.out.println("========================");
+
+        if (cloudinaryUrl != null && !cloudinaryUrl.isBlank()) {
+            cloudinary = new Cloudinary(cloudinaryUrl);
+            System.out.println("Cloudinary configurado con URL");
             return;
         }
 
-        cloudinary = new Cloudinary(cloudinaryUrl);
+        if (cloudName != null && !cloudName.isBlank()) {
+            String apiKey = System.getenv("CLOUDINARY_API_KEY");
+            String apiSecret = System.getenv("CLOUDINARY_API_SECRET");
+            cloudinary = new Cloudinary(ObjectUtils.asMap(
+                    "cloud_name", cloudName,
+                    "api_key", apiKey,
+                    "api_secret", apiSecret,
+                    "secure", true
+            ));
+            System.out.println("Cloudinary configurado con variables separadas");
+            return;
+        }
+
+        System.out.println("Cloudinary NO configurado");
     }
 
     public String subirImagen(MultipartFile file) throws IOException {
