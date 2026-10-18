@@ -13,13 +13,13 @@ import java.util.Map;
 @Service
 public class CloudinaryService {
 
-    @Value("${cloudinary.cloud.name:${CLOUDINARY_CLOUD_NAME:default}}")
+    @Value("${cloudinary.cloud.name:default}")
     private String cloudName;
 
-    @Value("${cloudinary.api.key:${CLOUDINARY_API_KEY:default}}")
+    @Value("${cloudinary.api.key:default}")
     private String apiKey;
 
-    @Value("${cloudinary.api.secret:${CLOUDINARY_API_SECRET:default}}")
+    @Value("${cloudinary.api.secret:default}")
     private String apiSecret;
 
     private Cloudinary cloudinary;
