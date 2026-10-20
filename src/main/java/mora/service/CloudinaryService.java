@@ -1,6 +1,7 @@
 package mora.service;
 
 import com.cloudinary.Cloudinary;
+import com.cloudinary.Transformation;
 import com.cloudinary.utils.ObjectUtils;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,17 +29,9 @@ public class CloudinaryService {
     public void init() {
         String cloudinaryUrl = System.getenv("CLOUDINARY_URL");
         String cloudName = System.getenv("CLOUDINARY_CLOUD_NAME");
-        System.out.println("TEST_VAR: " + System.getenv("TEST_VAR"));
-
-        // Log para debug
-        System.out.println("=== CLOUDINARY DEBUG ===");
-        System.out.println("CLOUDINARY_URL: " + cloudinaryUrl);
-        System.out.println("CLOUDINARY_CLOUD_NAME: " + cloudName);
-        System.out.println("========================");
 
         if (cloudinaryUrl != null && !cloudinaryUrl.isBlank()) {
             cloudinary = new Cloudinary(cloudinaryUrl);
-            System.out.println("Cloudinary configurado con URL");
             return;
         }
 
@@ -61,19 +54,17 @@ public class CloudinaryService {
     public String subirImagen(MultipartFile file) throws IOException {
         if (cloudinary == null) {
             throw new RuntimeException(
-                    "Cloudinary no está configurado — " +
-                            "agrega las variables de entorno");
+                    "Cloudinary no está configurado");
         }
         Map resultado = cloudinary.uploader().upload(
                 file.getBytes(),
                 ObjectUtils.asMap(
                         "folder", "mora/productos",
-                        "transformation", ObjectUtils.asMap(
-                                "width", 800,
-                                "height", 800,
-                                "crop", "fill",
-                                "quality", "auto"
-                        )
+                        "transformation", new Transformation()
+                                .width(800)
+                                .height(800)
+                                .crop("fill")
+                                .quality("auto")
                 )
         );
         return (String) resultado.get("secure_url");
