@@ -28,6 +28,7 @@ public class CloudinaryService {
     public void init() {
         String cloudinaryUrl = System.getenv("CLOUDINARY_URL");
         String cloudName = System.getenv("CLOUDINARY_CLOUD_NAME");
+        System.out.println("TEST_VAR: " + System.getenv("TEST_VAR"));
 
         // Log para debug
         System.out.println("=== CLOUDINARY DEBUG ===");
