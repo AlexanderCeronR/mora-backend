@@ -6,10 +6,12 @@ import mora.entity.*;
 import mora.repository.*;
 import mora.service.AsignacionService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -57,6 +59,7 @@ public class PublicoController {
     }
 
     @PostMapping("/mesa/{mesaId}/pedido")
+    @Transactional
     public ResponseEntity<Map<String, Object>> hacerPedido(
             @PathVariable Long mesaId,
             @RequestBody List<DetallePedidoRequest> detalles) {
@@ -117,18 +120,20 @@ public class PublicoController {
                 .orElse("Tu pedido fue recibido. " +
                         "Un mesero será asignado pronto.");
 
-        return ResponseEntity.ok(Map.of(
-                "pedidoId", guardado.getId(),
-                "tokenCliente", guardado.getTokenCliente(),
-                "total", guardado.getTotal(),
-                "meseroAsignado", meseroAsignado
-                        .map(Usuario::getNombre)
-                        .orElse("Pendiente"),
-                "mensaje", mensajeAsignacion
-        ));
+        Map<String, Object> resp = new HashMap<>();
+        resp.put("pedidoId", guardado.getId());
+        resp.put("tokenCliente", guardado.getTokenCliente());
+        resp.put("total", guardado.getTotal());
+        resp.put("meseroAsignado", meseroAsignado
+                .map(Usuario::getNombre)
+                .orElse("Pendiente"));
+        resp.put("mensaje", mensajeAsignacion);
+
+        return ResponseEntity.ok(resp);
     }
 
     @GetMapping("/pedido/{token}/estado")
+    @Transactional(readOnly = true)
     public ResponseEntity<Map<String, Object>> verEstadoPedido(
             @PathVariable String token) {
 
@@ -137,21 +142,26 @@ public class PublicoController {
                 .orElseThrow(() -> new RuntimeException(
                         "Pedido no encontrado"));
 
-        return ResponseEntity.ok(Map.of(
-                "pedidoId", pedido.getId(),
-                "estado", pedido.getEstado().name(),
-                "estadoAsignacion",
-                pedido.getEstadoAsignacion().name(),
-                "mesero", pedido.getMesero() != null
-                        ? pedido.getMesero().getNombre()
-                        : "Pendiente de asignación",
-                "total", pedido.getTotal(),
-                "detalles", pedido.getDetalles().stream()
-                        .map(d -> Map.of(
-                                "producto", d.getProducto().getNombre(),
-                                "cantidad", d.getCantidad(),
-                                "subtotal", d.getSubtotal()
-                        )).toList()
-        ));
+        Map<String, Object> resp = new HashMap<>();
+        resp.put("pedidoId", pedido.getId());
+        resp.put("estado", pedido.getEstado().name());
+        resp.put("estadoAsignacion",
+                pedido.getEstadoAsignacion() != null
+                        ? pedido.getEstadoAsignacion().name()
+                        : "NUEVO");
+        resp.put("mesero", pedido.getMesero() != null
+                ? pedido.getMesero().getNombre()
+                : "Pendiente de asignación");
+        resp.put("total", pedido.getTotal());
+        resp.put("detalles", pedido.getDetalles().stream()
+                .map(d -> {
+                    Map<String, Object> det = new HashMap<>();
+                    det.put("producto", d.getProducto().getNombre());
+                    det.put("cantidad", d.getCantidad());
+                    det.put("subtotal", d.getSubtotal());
+                    return det;
+                }).toList());
+
+        return ResponseEntity.ok(resp);
     }
 }
