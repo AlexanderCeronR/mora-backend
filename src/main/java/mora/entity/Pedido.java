@@ -56,9 +56,18 @@ public class Pedido {
     @PrePersist
     public void prePersist() {
         this.fechaCreacion = LocalDateTime.now();
-        this.estado = Estado.PENDIENTE;
-        this.estadoAsignacion = EstadoAsignacion.NUEVO;
-        this.tokenCliente = UUID.randomUUID().toString();
+        if (this.estado == null) {
+            this.estado = Estado.PENDIENTE;
+        }
+        // Si ya tiene mesero, está asignado
+        if (this.mesero != null) {
+            this.estadoAsignacion = EstadoAsignacion.ASIGNADO;
+        } else if (this.estadoAsignacion == null) {
+            this.estadoAsignacion = EstadoAsignacion.NUEVO;
+        }
+        if (this.tokenCliente == null) {
+            this.tokenCliente = UUID.randomUUID().toString();
+        }
     }
 
     public enum Estado {

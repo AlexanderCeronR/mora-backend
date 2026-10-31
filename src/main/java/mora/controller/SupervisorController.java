@@ -51,6 +51,10 @@ public class SupervisorController {
         for (Pedido p : pedidoRepository.findByEstadoAsignacion(
                 Pedido.EstadoAsignacion.NUEVO)) {
 
+            // Solo pedidos sin mesero y que aún no se pagaron
+            if (p.getMesero() != null) continue;
+            if (p.getEstado() == Pedido.Estado.PAGADO) continue;
+
             List<Map<String, Object>> detalles = new ArrayList<>();
             p.getDetalles().forEach(d -> {
                 Map<String, Object> det = new HashMap<>();

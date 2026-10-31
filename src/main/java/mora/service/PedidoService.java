@@ -29,26 +29,21 @@ public class PedidoService {
         this.productoRepository = productoRepository;
     }
 
-    // Trae todos los pedidos
     @Transactional(readOnly = true)
     public List<Pedido> obtenerTodos() {
         return pedidoRepository.findAll();
     }
 
-    // Trae pedidos por estado
-    // útil para la vista de cocina
     @Transactional(readOnly = true)
     public List<Pedido> obtenerPorEstado(Pedido.Estado estado) {
         return pedidoRepository.findByEstado(estado);
     }
 
-    // Trae pedidos de una mesa
     @Transactional(readOnly = true)
     public List<Pedido> obtenerPorMesa(Long mesaId) {
         return pedidoRepository.findByMesaId(mesaId);
     }
 
-    // Trae un pedido por id
     @Transactional(readOnly = true)
     public Pedido obtenerPorId(Long id) {
         return pedidoRepository.findById(id)
@@ -56,37 +51,56 @@ public class PedidoService {
                         "Pedido no encontrado con id: " + id));
     }
 
-    // Crea un pedido completo con sus detalles
     @Transactional
     public Pedido crear(PedidoRequest request) {
 
-        // 1. Busca la mesa y verifica que esté libre
+        // 1. Mesa: debe existir y estar libre
         Mesa mesa = mesaRepository.findById(request.getMesaId())
                 .orElseThrow(() -> new RuntimeException(
                         "Mesa no encontrada"));
 
-        if (mesa.getEstado() == Mesa.Estado.OCUPADA) {
+        if (mesa.getEstado() != Mesa.Estado.LIBRE) {
             throw new RuntimeException(
-                    "La mesa " + mesa.getNumero() + " ya está ocupada");
+                    "La mesa " + mesa.getNumero() + " no está libre");
         }
 
-        // 2. Busca el mesero
+        // 2. Responsable: solo mesero o supervisor
         Usuario mesero = usuarioRepository.findById(request.getMeseroId())
                 .orElseThrow(() -> new RuntimeException(
                         "Mesero no encontrado"));
 
-        // 3. Crea el pedido base
+        if (mesero.getRol() != Usuario.Rol.MESERO
+                && mesero.getRol() != Usuario.Rol.SUPERVISOR
+                && mesero.getRol() != Usuario.Rol.ADMIN) {
+            throw new RuntimeException(
+                    "Este usuario no puede atender pedidos");
+        }
+
+        // 3. Debe traer productos
+        if (request.getDetalles() == null
+                || request.getDetalles().isEmpty()) {
+            throw new RuntimeException(
+                    "El pedido debe tener al menos un producto");
+        }
+
+        // 4. Pedido base (con mesero queda ASIGNADO en @PrePersist)
         Pedido pedido = Pedido.builder()
                 .mesa(mesa)
                 .mesero(mesero)
+                .estadoAsignacion(Pedido.EstadoAsignacion.ASIGNADO)
                 .detalles(new ArrayList<>())
                 .build();
-        // @PrePersist asigna estado PENDIENTE y fechaCreacion
 
-        // 4. Procesa cada detalle y calcula subtotales
+        // 5. Detalles y total
         BigDecimal total = BigDecimal.ZERO;
 
         for (DetallePedidoRequest detalleReq : request.getDetalles()) {
+            if (detalleReq.getCantidad() == null
+                    || detalleReq.getCantidad() < 1) {
+                throw new RuntimeException(
+                        "La cantidad debe ser al menos 1");
+            }
+
             Producto producto = productoRepository
                     .findById(detalleReq.getProductoId())
                     .orElseThrow(() -> new RuntimeException(
@@ -99,7 +113,6 @@ public class PedidoService {
                                 + " no está disponible");
             }
 
-            // subtotal = precio × cantidad
             BigDecimal subtotal = producto.getPrecio()
                     .multiply(BigDecimal.valueOf(detalleReq.getCantidad()));
 
@@ -115,28 +128,25 @@ public class PedidoService {
             total = total.add(subtotal);
         }
 
-        // 5. Asigna el total al pedido
         pedido.setTotal(total);
 
-        // 6. Cambia el estado de la mesa a OCUPADA
+        // 6. Mesa ocupada
         mesa.setEstado(Mesa.Estado.OCUPADA);
         mesaRepository.save(mesa);
 
-        // 7. Guarda el pedido con todos sus detalles
         return pedidoRepository.save(pedido);
     }
 
-    // Cambia el estado del pedido
     @Transactional
     public Pedido cambiarEstado(Long id, Pedido.Estado nuevoEstado) {
-        // Usa findById del repository que tiene @EntityGraph
         Pedido pedido = pedidoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException(
                         "Pedido no encontrado con id: " + id));
 
         pedido.setEstado(nuevoEstado);
 
-        if (nuevoEstado == Pedido.Estado.ENTREGADO) {
+        // La mesa se libera cuando el cliente ya pagó
+        if (nuevoEstado == Pedido.Estado.PAGADO) {
             Mesa mesa = pedido.getMesa();
             mesa.setEstado(Mesa.Estado.LIBRE);
             mesaRepository.save(mesa);
@@ -144,12 +154,9 @@ public class PedidoService {
 
         pedidoRepository.save(pedido);
 
-        // Recarga el pedido con todos sus detalles
-        return pedidoRepository.findById(id)
-                .orElseThrow();
+        return pedidoRepository.findById(id).orElseThrow();
     }
 
-    // Cancela un pedido
     @Transactional
     public void cancelar(Long id) {
         Pedido pedido = obtenerPorId(id);
@@ -158,8 +165,11 @@ public class PedidoService {
             throw new RuntimeException(
                     "No se puede cancelar un pedido ya pagado");
         }
+        if (pedido.getEstado() == Pedido.Estado.ENTREGADO) {
+            throw new RuntimeException(
+                    "No se puede cancelar un pedido ya entregado");
+        }
 
-        // Libera la mesa
         Mesa mesa = pedido.getMesa();
         mesa.setEstado(Mesa.Estado.LIBRE);
         mesaRepository.save(mesa);
