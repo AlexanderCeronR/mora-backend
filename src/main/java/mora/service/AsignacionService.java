@@ -27,32 +27,35 @@ public class AsignacionService {
     @Transactional
     public Optional<Usuario> asignarMeseroAutomatico(Pedido pedido) {
 
-        // 1. Busca todos los meseros disponibles
-        List<Usuario> meserosDisponibles = usuarioRepository
+        // 1. Meseros disponibles (prioridad)
+        List<Usuario> candidatos = usuarioRepository
                 .findByRolAndDisponibleTrue(Usuario.Rol.MESERO);
 
-        if (meserosDisponibles.isEmpty()) {
-            // No hay meseros disponibles
-            // el pedido queda en NUEVO para asignación manual
+        // 2. Contingencia: si no hay meseros, usa supervisores
+        if (candidatos.isEmpty()) {
+            candidatos = usuarioRepository
+                    .findByRolAndDisponibleTrue(Usuario.Rol.SUPERVISOR);
+        }
+
+        // 3. Nadie disponible: queda en NUEVO para asignación manual
+        if (candidatos.isEmpty()) {
             return Optional.empty();
         }
 
-        // 2. Cuenta pedidos activos por mesero
-        // y elige el que menos tenga — balanceo de carga
-        Usuario meseroAsignado = meserosDisponibles.stream()
-                .min(Comparator.comparingLong(mesero ->
+        // 4. Balanceo de carga: el que menos pedidos activos tenga
+        Usuario asignado = candidatos.stream()
+                .min(Comparator.comparingLong(u ->
                         pedidoRepository
                                 .findByMeseroIdAndEstadoNot(
-                                        mesero.getId(),
+                                        u.getId(),
                                         Pedido.Estado.PAGADO)
                                 .size()
                 ))
-                .orElse(meserosDisponibles.get(0));
+                .orElse(candidatos.get(0));
 
-        // 3. Asigna el mesero al pedido
-        pedido.setMesero(meseroAsignado);
+        pedido.setMesero(asignado);
         pedido.setEstadoAsignacion(Pedido.EstadoAsignacion.ASIGNADO);
 
-        return Optional.of(meseroAsignado);
+        return Optional.of(asignado);
     }
 }
